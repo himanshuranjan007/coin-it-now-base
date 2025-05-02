@@ -182,6 +182,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "getMintPrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -367,19 +380,6 @@
         }
       ],
       "name": "setBaseURI",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_mintPrice",
-          "type": "uint256"
-        }
-      ],
-      "name": "setMintPrice",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

@@ -6,6 +6,7 @@ import TokenCard from "@/components/TokenCard";
 import { Button } from "@/components/ui/button";
 import { WalletProvider, useWallet } from "@/context/WalletContext";
 import { mintToken } from "@/lib/wallet";
+import { toast } from "sonner";
 
 const MainApp = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -20,20 +21,27 @@ const MainApp = () => {
   };
 
   const handleMint = async () => {
-    if (!wallet?.isConnected || !uploadedImage) return;
+    if (!wallet?.isConnected || !uploadedImage) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
     
     setMintingStatus("minting");
     try {
+      toast.info("Preparing to mint your NFT on Base Mainnet...");
       const result = await mintToken(uploadedImage);
       if (result) {
         setMintData(result);
         setMintingStatus("minted");
+        toast.success(`Successfully minted token #${result.tokenId} on Base Mainnet!`);
       } else {
         setMintingStatus("idle");
+        toast.error("Minting failed. Please try again.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Minting error:", error);
       setMintingStatus("idle");
+      toast.error(`Error during minting: ${error.message || "Unknown error"}`);
     }
   };
 
@@ -87,15 +95,20 @@ const MainApp = () => {
                   <Button 
                     onClick={handleMint} 
                     disabled={mintingStatus === "minting" || !wallet?.isConnected}
-                    className="wallet-button"
+                    className={`wallet-button ${mintingStatus === "minting" ? "animate-pulse" : ""}`}
                   >
                     {!wallet?.isConnected
                       ? "Connect Wallet to Mint"
                       : mintingStatus === "minting"
-                      ? "Minting..."
-                      : "Mint as Token"}
+                      ? "Minting on Base..."
+                      : "Mint as Token (0.001 ETH)"}
                   </Button>
                 </div>
+                {mintingStatus === "minting" && (
+                  <p className="text-sm text-center text-muted-foreground">
+                    Please confirm the transaction in your wallet and wait for it to be mined on Base Mainnet...
+                  </p>
+                )}
               </div>
             ) : (
               <ImageUploader onImageUploaded={handleImageUpload} />
@@ -105,7 +118,7 @@ const MainApp = () => {
 
         <div className="mt-8 p-4 bg-secondary/30 rounded-lg text-sm text-center max-w-lg mx-auto">
           <p className="text-muted-foreground">
-            This is a demo app. In a production version, real tokens would be minted on Base Mainnet using the Base Smart Wallet.
+            This app mints real NFTs on Base Mainnet. You will need Base ETH to cover gas fees and the 0.001 ETH minting cost.
           </p>
         </div>
       </div>

@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link } from "lucide-react";
+import { ExternalLink, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 interface TokenCardProps {
@@ -34,7 +34,7 @@ const TokenCard: React.FC<TokenCardProps> = ({ imageUrl, tokenId, txHash }) => {
         </div>
       </CardHeader>
       <CardContent className="p-6">
-        <h3 className="text-lg font-semibold mb-2">Your post is now a token!</h3>
+        <h3 className="text-lg font-semibold mb-2">Your post is now a token on Base Mainnet!</h3>
         <p className="text-muted-foreground text-sm">
           Successfully minted on Base Mainnet
         </p>
@@ -50,7 +50,7 @@ const TokenCard: React.FC<TokenCardProps> = ({ imageUrl, tokenId, txHash }) => {
             className="text-xs border-accent/30 hover:border-accent/60 hover:bg-accent/10"
             onClick={() => copyToClipboard(txHash, "Transaction hash")}
           >
-            <Link className="h-3 w-3 mr-1" />
+            <Copy className="h-3 w-3 mr-1" />
             Copy Tx
           </Button>
           <Button
@@ -59,6 +59,7 @@ const TokenCard: React.FC<TokenCardProps> = ({ imageUrl, tokenId, txHash }) => {
             className="text-xs"
             onClick={() => window.open(`https://basescan.org/tx/${txHash}`, '_blank')}
           >
+            <ExternalLink className="h-3 w-3 mr-1" />
             View on Basescan
           </Button>
         </div>

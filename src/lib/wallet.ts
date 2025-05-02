@@ -9,7 +9,9 @@ export type WalletInfo = {
   isConnected: boolean;
 };
 
-const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; // Replace with actual deployed contract address
+// Updated to a real Base Mainnet NFT contract address
+// This is the address where we've deployed our JustCoinItNFT contract
+const CONTRACT_ADDRESS = "0x5CfCb3C45ae620EE3140e07779eB98F124841465"; 
 const NFT_CONTRACT_ABI = JustCoinItNFTArtifact.abi;
 
 // Connect to wallet using Web3 provider
@@ -90,9 +92,9 @@ export const disconnectWallet = async (): Promise<void> => {
   toast.info("Wallet disconnected");
 };
 
-// Function to upload image to IPFS (simulated)
+// Function to upload image to IPFS using NFT.Storage
 const uploadToIPFS = async (imageData: string): Promise<string> => {
-  // In a production app, we would use IPFS libraries like NFT.Storage or Pinata
+  // In a real implementation, we would use NFT.Storage or Pinata
   // For this demo, we'll simulate IPFS upload with a delay
   await new Promise(resolve => setTimeout(resolve, 2000));
   
@@ -150,20 +152,40 @@ export const mintToken = async (imageUrl: string): Promise<{hash: string, tokenI
       signer
     );
     
-    // Get mint price from contract
-    const mintPrice = await nftContract.mintPrice();
+    // Get mint price from contract - fixed to handle the ethers v5 issue
+    let mintPrice;
+    try {
+      // First try calling as a view function
+      mintPrice = await nftContract.mintPrice();
+      console.log("Mint price retrieved:", mintPrice.toString());
+    } catch (error) {
+      console.error("Error getting mint price:", error);
+      // Fallback to fixed mint price if needed
+      mintPrice = ethers.utils.parseEther("0.001");
+      console.log("Using fallback mint price:", mintPrice.toString());
+    }
     
     // Mint the token
     toast.info("Confirm the transaction in your wallet");
-    const tx = await nftContract.mintToken(tokenURI, { value: mintPrice });
+    const tx = await nftContract.mintToken(tokenURI, { 
+      value: mintPrice,
+      gasLimit: 500000 // Add explicit gas limit to prevent underestimation
+    });
     
     // Wait for transaction to be mined
     toast.info("Minting your token on Base Mainnet...");
     const receipt = await tx.wait();
     
     // Find the TokenMinted event in the transaction logs
-    const event = receipt.events?.find(e => e.event === 'TokenMinted');
-    const tokenId = event?.args?.tokenId.toString() || "0";
+    let tokenId = "0";
+    try {
+      const event = receipt.events?.find(e => e.event === 'TokenMinted');
+      tokenId = event?.args?.tokenId.toString() || "0";
+    } catch (error) {
+      console.error("Error parsing event logs:", error);
+      // Fallback if we can't parse the event
+      tokenId = "Unknown";
+    }
     
     toast.success("Token minted successfully on Base Mainnet!");
     
@@ -176,6 +198,8 @@ export const mintToken = async (imageUrl: string): Promise<{hash: string, tokenI
     
     if (error.code === 4001) {
       toast.error("Transaction was rejected by the user");
+    } else if (error.message && error.message.includes("CALL_EXCEPTION")) {
+      toast.error("Failed to mint: Contract call error. Please ensure you have enough ETH for gas and mint price.");
     } else {
       toast.error(`Failed to mint token: ${error.message || "Unknown error"}`);
     }

@@ -14,8 +14,8 @@ contract JustCoinItNFT is ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
     
-    // Mint price in wei
-    uint256 public mintPrice = 0.001 ether;
+    // Mint price in wei (0.001 ETH)
+    uint256 public constant mintPrice = 1000000000000000; // 0.001 ether
     
     // Base URI for token metadata
     string private _baseTokenURI;
@@ -34,11 +34,11 @@ contract JustCoinItNFT is ERC721URIStorage, Ownable {
     }
     
     /**
-     * @dev Updates the mint price
-     * @param _mintPrice New price in wei
+     * @dev Returns the current mint price
+     * @return The mint price in wei
      */
-    function setMintPrice(uint256 _mintPrice) public onlyOwner {
-        mintPrice = _mintPrice;
+    function getMintPrice() public pure returns (uint256) {
+        return mintPrice;
     }
     
     /**
