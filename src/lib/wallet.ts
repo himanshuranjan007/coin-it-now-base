@@ -2,6 +2,7 @@
 import { toast } from "sonner";
 import { ethers } from "ethers";
 import JustCoinItNFTArtifact from "../contracts/JustCoinItNFT.json";
+import { executeWithSponsoredGas, sponsorTransaction } from "./paymaster";
 
 export type WalletInfo = {
   address: string;
@@ -144,6 +145,7 @@ export const mintToken = async (imageUrl: string): Promise<{hash: string, tokenI
     // Get web3 provider and signer
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
+    const userAddress = await signer.getAddress();
     
     // Create contract instance
     const nftContract = new ethers.Contract(
@@ -152,25 +154,79 @@ export const mintToken = async (imageUrl: string): Promise<{hash: string, tokenI
       signer
     );
     
-    // Get mint price from contract - fixed to handle the ethers v5 issue
+    // Get mint price from contract
     let mintPrice;
     try {
-      // First try calling as a view function
       mintPrice = await nftContract.mintPrice();
       console.log("Mint price retrieved:", mintPrice.toString());
     } catch (error) {
       console.error("Error getting mint price:", error);
-      // Fallback to fixed mint price if needed
       mintPrice = ethers.utils.parseEther("0.001");
       console.log("Using fallback mint price:", mintPrice.toString());
     }
     
-    // Mint the token
-    toast.info("Confirm the transaction in your wallet");
-    const tx = await nftContract.mintToken(tokenURI, { 
-      value: mintPrice,
-      gasLimit: 500000 // Add explicit gas limit to prevent underestimation
-    });
+    // Define the transaction function that will be called with or without gas sponsoring
+    const performMintTransaction = async (sponsored: boolean) => {
+      // First estimate gas for the transaction
+      const mintTxEstimate = await nftContract.estimateGas.mintToken(tokenURI, { 
+        value: mintPrice
+      }).catch(error => {
+        console.error("Error estimating gas:", error);
+        return ethers.BigNumber.from(500000); // Fallback gas limit
+      });
+
+      console.log("Estimated gas:", mintTxEstimate.toString());
+
+      // Prepare transaction parameters
+      const mintTxParams = { 
+        value: mintPrice,
+        gasLimit: mintTxEstimate.mul(120).div(100) // Add 20% buffer to estimated gas
+      };
+
+      // If sponsoring is enabled and the user is eligible, try to sponsor the transaction
+      if (sponsored) {
+        // Create a transaction object first (without sending it)
+        const unsignedTx = await nftContract.populateTransaction.mintToken(tokenURI, mintTxParams);
+        
+        // Get the current nonce for the user
+        const nonce = await provider.getTransactionCount(userAddress);
+        const chainId = (await provider.getNetwork()).chainId;
+        
+        // Complete transaction object with necessary fields
+        const txRequest = {
+          ...unsignedTx,
+          nonce,
+          from: userAddress,
+          chainId,
+          gasLimit: mintTxParams.gasLimit,
+        };
+        
+        // Try to sponsor the transaction through the paymaster
+        const sponsoredTx = await sponsorTransaction(txRequest);
+        
+        if (sponsoredTx) {
+          toast.info("Transaction gas is sponsored! No gas fees for you.");
+          
+          // Send the sponsored transaction
+          const tx = await signer.sendTransaction(sponsoredTx);
+          return tx;
+        } else {
+          // If sponsoring fails, fall back to regular transaction
+          toast.info("Gas sponsoring unavailable. Proceeding with regular transaction.");
+          const tx = await nftContract.mintToken(tokenURI, mintTxParams);
+          return tx;
+        }
+      } else {
+        // Regular non-sponsored transaction
+        toast.info("Confirm the transaction in your wallet");
+        const tx = await nftContract.mintToken(tokenURI, mintTxParams);
+        return tx;
+      }
+    };
+    
+    // Execute the transaction with gas sponsoring if possible
+    toast.info("Preparing your transaction...");
+    const tx = await executeWithSponsoredGas(performMintTransaction, userAddress);
     
     // Wait for transaction to be mined
     toast.info("Minting your token on Base Mainnet...");

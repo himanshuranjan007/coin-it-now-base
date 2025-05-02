@@ -18,6 +18,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
   // Check for wallet connection changes
   useEffect(() => {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+
     // Handle account changes
     const handleAccountsChanged = (accounts: string[]) => {
       if (accounts.length === 0) {

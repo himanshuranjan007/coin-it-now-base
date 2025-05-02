@@ -2,16 +2,22 @@
 import React from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Copy } from "lucide-react";
+import { ExternalLink, Copy, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 interface TokenCardProps {
   imageUrl: string;
   tokenId: string;
   txHash: string;
+  isGasSponsored?: boolean;
 }
 
-const TokenCard: React.FC<TokenCardProps> = ({ imageUrl, tokenId, txHash }) => {
+const TokenCard: React.FC<TokenCardProps> = ({ 
+  imageUrl, 
+  tokenId, 
+  txHash,
+  isGasSponsored = false
+}) => {
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${type} copied to clipboard`);
@@ -31,12 +37,19 @@ const TokenCard: React.FC<TokenCardProps> = ({ imageUrl, tokenId, txHash }) => {
           <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-mono">
             Token #{tokenId}
           </div>
+          {isGasSponsored && (
+            <div className="absolute top-2 left-2 bg-green-600/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+              <Zap className="h-3 w-3" />
+              Gas Sponsored
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-6">
         <h3 className="text-lg font-semibold mb-2">Your post is now a token on Base Mainnet!</h3>
         <p className="text-muted-foreground text-sm">
           Successfully minted on Base Mainnet
+          {isGasSponsored && " with sponsored gas fees"}
         </p>
       </CardContent>
       <CardFooter className="bg-secondary/50 px-6 py-3 flex flex-col sm:flex-row gap-2 items-center justify-between">

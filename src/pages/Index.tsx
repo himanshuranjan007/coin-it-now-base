@@ -11,7 +11,7 @@ import { toast } from "sonner";
 const MainApp = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [mintingStatus, setMintingStatus] = useState<"idle" | "minting" | "minted">("idle");
-  const [mintData, setMintData] = useState<{ hash: string; tokenId: string } | null>(null);
+  const [mintData, setMintData] = useState<{ hash: string; tokenId: string; isGasSponsored?: boolean } | null>(null);
   const { wallet } = useWallet();
 
   const handleImageUpload = (imageData: string) => {
@@ -31,7 +31,10 @@ const MainApp = () => {
       toast.info("Preparing to mint your NFT on Base Mainnet...");
       const result = await mintToken(uploadedImage);
       if (result) {
-        setMintData(result);
+        setMintData({
+          ...result,
+          isGasSponsored: localStorage.getItem('gasSponsored') === 'true'
+        });
         setMintingStatus("minted");
         toast.success(`Successfully minted token #${result.tokenId} on Base Mainnet!`);
       } else {
@@ -71,7 +74,8 @@ const MainApp = () => {
             <TokenCard 
               imageUrl={uploadedImage!} 
               tokenId={mintData.tokenId} 
-              txHash={mintData.hash} 
+              txHash={mintData.hash}
+              isGasSponsored={mintData.isGasSponsored} 
             />
             
             <div className="flex justify-center">
@@ -118,7 +122,7 @@ const MainApp = () => {
 
         <div className="mt-8 p-4 bg-secondary/30 rounded-lg text-sm text-center max-w-lg mx-auto">
           <p className="text-muted-foreground">
-            This app mints real NFTs on Base Mainnet. You will need Base ETH to cover gas fees and the 0.001 ETH minting cost.
+            This app mints real NFTs on Base Mainnet. We use a gas sponsorship system to cover gas fees, but you'll still need to pay the 0.001 ETH minting cost.
           </p>
         </div>
       </div>
