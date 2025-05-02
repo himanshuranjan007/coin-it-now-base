@@ -37,14 +37,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     };
 
     // Add event listeners if window.ethereum is available
-    if (window.ethereum) {
+    if (typeof window !== 'undefined' && window.ethereum) {
       window.ethereum.on('accountsChanged', handleAccountsChanged);
       window.ethereum.on('chainChanged', handleChainChanged);
     }
 
     // Clean up event listeners
     return () => {
-      if (window.ethereum) {
+      if (typeof window !== 'undefined' && window.ethereum) {
         window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       }
